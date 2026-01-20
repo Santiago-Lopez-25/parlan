@@ -1,8 +1,5 @@
-#![allow(dead_code, unused_imports)]
-
 use std::collections::HashMap;
 
-use crate::lexer;
 
 #[derive(Debug,Clone,PartialEq)]
 pub enum TokenType {
@@ -16,7 +13,7 @@ pub enum TokenType {
     Eof
 }
 
-#[derive(Debug,Clone,PartialEq)]
+#[derive(Clone,PartialEq)]
 pub struct Tk {
     tk_type: TokenType,
     span: String,
@@ -29,6 +26,11 @@ impl Tk {
             span,
             line
         };
+    }
+}
+impl std::fmt::Debug for Tk {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f,"Token {:?} >> `{}`",self.tk_type, self.span)
     }
 }
 
@@ -47,16 +49,6 @@ impl Lexer {
             curr_line: 0,
             tokens: Vec::new()
         };
-    }
-    fn jump_space(&mut self) {
-        loop {
-            if self.pos == self.source.len() {break;}
-            if [" ","\n","\r","\t"].contains(&&self.source[self.pos..self.pos+1]) {
-                self.pos += 1;
-            } else {
-                break;
-            }
-        }
     }
     pub fn lexer(&mut self) {
         let keywords = HashMap::from([
