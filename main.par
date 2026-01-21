@@ -1,20 +1,7 @@
-var a = s 5 5 uwhefjb 8;
-dvsdgs vaer var A A CA  sfd var int;
-var a = s 5 5 uwhefjb 8;
-dvsdgs vaer var A A CA  sfd var int;
-var a = s 5 5 uwhefjb 8;
-dvsdgs vaer var A A CA  sfd var int;
-var a = s 5 5 uwhefjb 8;
-dvsdgs vaer var A A CA  sfd var int;
-var a = s 5 5 uwhefjb 8;
-dvsdgs vaer var A A CA  sfd var int;
-var a = s 5 5 uwhefjb 8;
-dvsdgs vaer var A A CA  sfd var int;
-var a = s 5 5 uwhefjb 8;
-dvsdgs vaer var A A CA  sfd var int;
-var a = s 5 5 uwhefjb 8;
-dvsdgs vaer var A A CA  sfd var int;
-var a = s 5 5 uwhefjb 8;
-dvsdgs vaer var A A CA  sfd var int;
-var a = s 5 5 uwhefjb 8;
-dvsdgs vaer var A A CA  sfd var int
+func operacion_0(n: int): int {
+    var temp: int = n * 2
+    if temp > 100 {
+        return temp + 0
+    }
+    return temp
+}
