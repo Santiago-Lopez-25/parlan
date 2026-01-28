@@ -9,13 +9,11 @@ def generar_codigo(nombre, num_bloques):
             f.write(f"    if temp > 100 {{\n")
             f.write(f"        return temp + {i}\n")
             f.write(f"    }}\n")
+            f.write(f"    var res_{i}: int = operacion_{i}({random.randint(1, 50)})\n")
+            f.write(f"    if res_{i} < 1000 {{\n")
+            f.write(f"        res_{i} = res_{i} + 1\n")
+            f.write(f"    }}\n\n")
             f.write(f"    return temp\n")
-            f.write(f"}}\n\n")
-            
-            # 2. Llamarla en un condicional
-            f.write(f"var res_{i}: int = operacion_{i}({random.randint(1, 50)})\n")
-            f.write(f"if res_{i} < 1000 {{\n")
-            f.write(f"    res_{i} = res_{i} + 1\n")
             f.write(f"}}\n\n")
 
 if __name__ == "__main__":

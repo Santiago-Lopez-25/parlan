@@ -1,7 +1,5 @@
 #![allow(dead_code)]
 
-use core::panic;
-
 use crate::{ast::*, lexer::{Tk, TokenType}};
 
 #[derive(Debug,Clone,PartialEq)]
@@ -114,8 +112,8 @@ impl Parser {
             let right = self.parse_comparation();
             left = Node::BinOp { left: Box::new(left), op: (|opr:TokenType| {
                 match opr {
-                    TokenType::Eq => 9,
-                    TokenType::Ne => 10,
+                    TokenType::Eq => 8,
+                    TokenType::Ne => 9,
                     _ => panic!("error: some inexplicable error ocurred")
                 }
             })(op), right: Box::new(right) }
@@ -135,10 +133,10 @@ impl Parser {
             let right = self.parse_term();
             left = Node::BinOp { left: Box::new(left), op: (|opr:TokenType| {
                 match opr {
-                    TokenType::Lt => 5,
-                    TokenType::Gt => 6,
-                    TokenType::Le => 7,
-                    TokenType::Ge => 8,
+                    TokenType::Lt => 4,
+                    TokenType::Gt => 5,
+                    TokenType::Le => 6,
+                    TokenType::Ge => 7,
                     _ => panic!("error: some inexplicable error ocurred")
                 }
             })(op), right: Box::new(right) }
@@ -153,7 +151,7 @@ impl Parser {
             left = Node::BinOp { left: Box::new(left), op: (|opr:TokenType| {
                 match opr {
                     TokenType::Plus => 0,
-                    TokenType::Minus => 2,
+                    TokenType::Minus => 1,
                     _ => panic!("error: some inexplicable error ocurred")
                 }
             })(op), right: Box::new(self.parse_factor()) }
@@ -179,7 +177,7 @@ impl Parser {
         if self.peek().tk_type == TokenType::Minus {
             let op = self.peek().tk_type.clone();
             self.idx += 1;
-            return Node::Unary { op: if op == TokenType::Bang{1} else {0}, value: Box::new(self.parse_unary()) }
+            return Node::Unary { op: if op == TokenType::Not{1} else {0}, value: Box::new(self.parse_unary()) }
         } else {
             return self.parse_call()
         }

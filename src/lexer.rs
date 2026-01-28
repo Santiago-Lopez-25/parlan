@@ -18,7 +18,7 @@ pub enum TokenType {
     Minus,
     Star,
     Slash,
-    Bang,
+    Not,
     Eq,
     Ne,
     Lt,
@@ -89,7 +89,8 @@ impl Lexer {
             ("else",TokenType::Else),
             ("return",TokenType::Return),
             ("true",TokenType::BoolL(true)),
-            ("false",TokenType::BoolL(false))
+            ("false",TokenType::BoolL(false)),
+            ("not",TokenType::Not)
         ]);
         let symbols = HashMap::from([
             (';',TokenType::Semicolon),
