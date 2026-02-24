@@ -1,13 +1,6 @@
-func operacion_0(n: int): int {
-    var temp: int = n * 2
-    if temp > 100 {
-        return temp + 0
-    }
-    var res_0: int = operacion_0(30)
-    if res_0 < 1000 {
-        res_0 = res_0 + 1
-    }
-
-    return temp
+func main(): int {
+    var vec0: vector = __new_vector(int)
+    __free_vector(vec0)
+    return 0
 }
 

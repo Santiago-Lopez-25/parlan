@@ -1,9 +1,12 @@
 #![allow(dead_code)]
 
-use std::collections::HashMap;
+use std::{collections::HashMap};
 
 #[derive(Debug,Clone,PartialEq)]
 pub enum TokenType {
+    NewVector,
+    FreeVector,
+
     Var,
     If,
     Else,
@@ -33,6 +36,7 @@ pub enum TokenType {
     FloatT,
     BoolT,
     StringT,
+    VecT,
     IntL(usize),
     FloatL(f64),
     BoolL(bool),
@@ -79,11 +83,14 @@ impl Lexer {
     }
     pub fn lexer(&mut self) {
         let keywords = HashMap::from([
+            ("__new_vector",TokenType::NewVector),
+            ("__free_vector",TokenType::FreeVector),
             ("var",TokenType::Var),
             ("int",TokenType::IntT),
             ("float",TokenType::FloatT),
             ("bool",TokenType::BoolT),
             ("string",TokenType::StringT),
+            ("vector",TokenType::VecT),
             ("func",TokenType::Func),
             ("if",TokenType::If),
             ("else",TokenType::Else),

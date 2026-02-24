@@ -10,14 +10,63 @@ pub struct Backend {
     padding: usize // padding
 }
 
+pub static BOILERPLATE: &str = r#"#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+
+typedef unsigned long long u64;
+typedef signed long long i64;
+typedef signed int i32;
+
+#define vector Vector*
+typedef struct {
+    u64    len;
+    u64    cap;
+    u64    elem_size;
+    void**  data;
+} Vector;
+
+#define vec_len(vec) (vec->len)
+#define vec_cap(vec) (vec->cap)
+
+vector new__vector(u64 elem_size) {
+    vector vec = (vector)malloc(sizeof(Vector));
+    vec->len = 0;
+    vec->elem_size = elem_size;
+    vec->cap = 15;
+    vec->data = malloc(vec->cap * elem_size);
+    return vec;
+}
+
+void free__vector(vector vec) {
+    free(vec->data);
+    free(vec);
+    vec = NULL;
+}
+
+void push__vector(vector vec, void* data) {
+    if (vec->len+1 == vec->cap) {
+        vec->cap *= 2;
+        vec->data = realloc(vec->data, vec->cap * vec->elem_size);
+    }
+    *(vec->data + (vec->len * vec->elem_size)) = data;
+    vec->len++;
+}
+
+void* get__vector(vector vec, u64 idx) {
+    if (idx >= vec->len) {
+        fprintf(stderr, "error: trying to access index %llu while size is %llu", idx, vec->len);
+        return NULL;
+    }
+    return vec->data + (idx * vec->elem_size);
+}
+
+"#;
+
 impl Backend {
     pub fn new()->Self {
         return Backend {
-            c: format!(
-r#"#include <stdlib.h>
-#include <stdio.h>
-
-"#),
+            c: BOILERPLATE.to_string(),
             buff: String::new(),
             padding: 0
         }
@@ -29,13 +78,23 @@ r#"#include <stdlib.h>
         self.buff.clear();
     }
     fn emit_expr(&mut self, node: &Node)->String {
+        let tktype2ctype = |tktype: &TokenType| {
+            match tktype {
+                TokenType::FloatT => "double",
+                TokenType::BoolT => "unsigned char",
+                TokenType::IntT => "i64",
+                TokenType::StringT => "char*",
+                TokenType::VecT => "vector",
+                _ => panic!("error: unkown tokentype `{tktype:?}` for type")
+            }
+        };
         match node {
             Node::Lit(lit) => {
                 match lit {
                     Literal::Bool(b) => format!("{}", if *b {"1"} else {"0"}),
                     Literal::Float(f) => format!("{f}"),
                     Literal::Int(i) => format!("{i}"),
-                    Literal::Str(s) => format!("{s}")
+                    Literal::Str(s) => format!("\"{s}\"")
                 }
             }
             Node::BinOp {left, op, right} => {
@@ -91,6 +150,9 @@ r#"#include <stdlib.h>
                 return format!("{}({})",self.emit_expr(name),args0.join(",")); 
 
             }
+            Node::NewVector { vectype } => {
+                return format!("new__vector(sizeof({}))",tktype2ctype(vectype))
+            }
             Node::Id(id) => id.clone(),
             _ => panic!("error: stat Node ({node:?}) passed to Backend::emit_expr")
         }
@@ -100,16 +162,17 @@ r#"#include <stdlib.h>
             match tktype {
                 TokenType::FloatT => "double",
                 TokenType::BoolT => "unsigned char",
-                TokenType::IntT => "int",
+                TokenType::IntT => "i64",
                 TokenType::StringT => "char*",
-                _ => panic!("error: unkown tokentype for type")
+                TokenType::VecT => "vector",
+                _ => panic!("error: unkown tokentype `{tktype:?}` for type ")
             }
         };
         match node {
             Node::VarDecl { vartype, name, value } => {
                 let expr = self.emit_expr(value);
                 let ctype = tktype2ctype(vartype);
-                self.buff.push_str(format!("{ctype} {name} = {expr};").as_str());
+                self.buff.push_str(format!("{ctype} usr_{name} = {expr};").as_str());
                 self.push_buff();
             }
             Node::Block { nodes } => {
@@ -129,7 +192,7 @@ r#"#include <stdlib.h>
                     params.push(format!("{} {}", tktype2ctype(&param_pair.1), param_pair.0));
                 }
                 let params = format!("({})",params.join(","));
-                self.buff.push_str(format!("{crtype} {name}{params} {{").as_str()); self.push_buff();
+                self.buff.push_str(format!("{} {name}{params} {{", if name != "main" {crtype} else {"int"}).as_str()); self.push_buff();
                 self.padding += 1;
                 self.emit_stat(block);
                 self.padding -= 1;
@@ -155,6 +218,9 @@ r#"#include <stdlib.h>
             Node::VarReassing { name, value } => {
                 let value = self.emit_expr(value);
                 self.buff.push_str(format!("{name} = {value};").as_str()); self.push_buff();
+            }
+            Node::FreeVector { vector } => {
+                self.buff.push_str(format!("free__vector(usr_{});",vector.span).as_str()); self.push_buff();
             }
             _ => panic!("error: expr Node ({node:?}) passed to Backend::emit_stat")
         }

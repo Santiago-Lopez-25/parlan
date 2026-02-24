@@ -52,7 +52,13 @@ pub enum Node {
     Block {
         nodes: Vec<Node>
     },
-    Id (String)
+    Id (String),
+    NewVector {
+        vectype: TokenType
+    },
+    FreeVector {
+        vector: Tk
+    }
 }
 
 #[derive(Debug)]
@@ -61,7 +67,50 @@ pub struct Program {
 }
 
 impl Program {
+    fn aux_size(&self,node:&Node)->usize {
+        match node {
+            Node::Call { name, args } => {
+                let mut aux = 0;
+                for nod in args {
+                    aux += self.aux_size(nod);
+                }
+                return self.aux_size(name) * aux
+            }
+            Node::BinOp { left, op, right } => {
+                return self.aux_size(left) + self.aux_size(right) + size_of_val(op)
+            }
+            Node::Block { nodes } => {
+                let mut aux = 0;
+                for nod in nodes {
+                    aux += self.aux_size(nod);
+                }
+                return aux;
+            }
+            Node::Func { name: _ , parameters, rettype: _, block } => {
+                let mut aux = 0;
+                for _ in parameters {
+                    aux += size_of::<String>() + size_of::<TokenType>();
+                }
+                return size_of::<String>() + aux + size_of::<TokenType>() + self.aux_size(block)
+            }
+            Node::Id(_) => size_of::<String>(),
+            Node::If { cond, block, else_block } => {
+                return self.aux_size(cond) + self.aux_size(block) + size_of_val(else_block)
+            }
+            Node::Lit(l) => size_of_val(l),
+            Node::Return { expr } => self.aux_size(expr),
+            Node::Unary { op, value } => size_of_val(op) + self.aux_size(value),
+            Node::VarDecl { vartype, name, value } => size_of_val(vartype) + size_of_val(name) + self.aux_size(value),
+            Node::VarReassing { name, value } => self.aux_size(value) + size_of_val(name),
+            Node::NewVector { vectype:_ } => return size_of::<TokenType>(),
+            Node::FreeVector { vector:_ } => return size_of::<Tk>()
+        }
+    }
     pub fn size(&self)->usize {
-        return size_of::<Node>() * self.nodes.len()
+        let mut aux = 0;
+        for node in &self.nodes {
+            aux += self.aux_size(node);
+        }
+        return aux
     }
 }

@@ -100,6 +100,7 @@ impl Parser {
         self.eat(TokenType::Rbrace);
         return Node::Block { nodes }
     }
+    
 
     fn parse_expr(&mut self)->Node {
         return self.parse_eq()
@@ -243,6 +244,23 @@ impl Parser {
                 let expr = self.parse_expr();
                 self.eat(TokenType::Rparen);
                 return expr;
+            }
+            TokenType::NewVector => {
+                self.eat(TokenType::NewVector);
+                self.eat(TokenType::Lparen);
+                if [TokenType::BoolT,TokenType::IntT,TokenType::FloatT,TokenType::StringT].contains(&self.peek().tk_type) {
+                    let vectype = self.peek().tk_type.clone();
+                    self.eat(vectype.clone());
+                    self.eat(TokenType::Rparen);
+                    return Node::NewVector { vectype }
+                } else { panic!("error: unexpected type `{:?}` for vector ",self.peek().tk_type) }
+            }
+            TokenType::FreeVector => {
+                self.eat(TokenType::FreeVector);
+                self.eat(TokenType::Lparen);
+                let vector = self.eat(TokenType::Id).clone();
+                self.eat(TokenType::Rparen);
+                return Node::FreeVector { vector }
             }
             _ => {
                 panic!("error: unexpected primary token type `{:?}`",self.peek().tk_type)

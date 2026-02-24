@@ -24,21 +24,32 @@ def preparar_compilador_debug():
 
 def generar_codigo(num_bloques):
     with open(ARCHIVO_TEST, 'w') as f:
+        buff = ""
         for i in range(num_bloques):
             # 1. Definir una función
-            f.write(f"func operacion_{i}(n: int): int {{\n")
-            f.write(f"    var temp: int = n * 2\n")
-            f.write(f"    if temp > 100 {{\n")
-            f.write(f"        return temp + {i}\n")
-            f.write(f"    }}\n")
-            f.write(f"    var res_{i}: int = operacion_{i}({random.randint(1, 50)})\n")
-            f.write(f"    if res_{i} < 1000 {{\n")
-            f.write(f"        res_{i} = res_{i} + 1\n")
-            f.write(f"    }}\n\n")
-            f.write(f"    return temp\n")
-            f.write(f"}}\n\n")
-            
-            # 2. Llamarla en un condicional
+            f.write(f"""func operation_{i}(n: int): int {{
+    var temp: int = n * 2
+    if temp > 100 {{
+        return temp + {i}
+    }}
+    var res_{i}: int = operation_{i}({random.randint(1,50)})
+    if res_{i} < 1000 {{
+        res_{i} = res_{i} + 1
+    }}
+
+    return temp
+}}
+
+""")
+            #f.write(f"func operacion_{i}(n: int): int {{\n")
+            #f.write(f"    var temp: int = n * 2\n")
+            #f.write(f"    if temp > 100 {{\n")
+            #f.write(f"        return temp + {i}\n")
+            #f.write(f"    }}\n")
+            #f.write(f"    var res_{i}: int = operacion_{i}({random.randint(1, 50)})\n")
+            #f.write(f"    if res_{i} < 1000 {{\n")
+            #f.write(f"        res_{i} = res_{i} + 1\n")
+            #f.write(f"    }}\n\n")     
             
 
 def ejecutar_benchmark_release(num_lineas):
@@ -83,5 +94,8 @@ n = int(sys.argv[1] if len(sys.argv) > 1 else -1)
 if n == -1: 
     print("expected 1 argument: number of blocks (1 block = 13 lines)")
 else:
-    print(f"generating {n * 13} lines")
-    generar_codigo(n)
+    if n < 13:
+        print("cannot make less than 13 lines. rounding to 13 lines")
+        n = 13
+    print(f"generating {(n // 13) * 13} lines")
+    generar_codigo(n // 13)
