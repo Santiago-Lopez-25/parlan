@@ -49,8 +49,9 @@ void* get__vector(vector vec, u64 idx) {
     return vec->data + (idx * vec->elem_size);
 }
 
+const i64 usr_five = 5;
+const i64 usr_INFINITY = 9999999;
 int main() {
-    vector usr_vec0 = new__vector(sizeof(i64));
-    free__vector(usr_vec0);
+    i64 usr_something = usr_INFINITY;
     return 0;
 }

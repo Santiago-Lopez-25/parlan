@@ -1,6 +1,8 @@
 /target
 /learn_tests
-/main.par
-/out.c
-/parlan.exe
-/parlan.pdb
+main.par
+out.c
+parlan.exe
+parlan.pdb
+out_test.exe
+parlan_dbg.exe

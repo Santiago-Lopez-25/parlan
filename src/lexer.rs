@@ -6,6 +6,8 @@ use std::{collections::HashMap};
 pub enum TokenType {
     NewVector,
     FreeVector,
+    GetVector,
+    PushVector,
 
     Var,
     If,
@@ -41,6 +43,7 @@ pub enum TokenType {
     FloatL(f64),
     BoolL(bool),
     StringL(String),
+    Cblock(String),
     Eof
 }
 
@@ -85,6 +88,8 @@ impl Lexer {
         let keywords = HashMap::from([
             ("__new_vector",TokenType::NewVector),
             ("__free_vector",TokenType::FreeVector),
+            ("__get_vector",TokenType::GetVector),
+            ("__push_vector",TokenType::PushVector),
             ("var",TokenType::Var),
             ("int",TokenType::IntT),
             ("float",TokenType::FloatT),
@@ -133,7 +138,20 @@ impl Lexer {
                             break;
                         }
                     }
-                    if keywords.contains_key(&temp.as_str()) {
+                    if temp.as_str() == "c_code" {
+                        while chars[self.pos] == ' ' {self.pos += 1}
+                        if chars[self.pos] == '"' && chars[self.pos+1] == '"' {
+                            self.pos += 2;
+                            let mut t = String::new();
+                            while !(chars[self.pos] == '"' && chars[self.pos+1] == '"') {
+                                t.push(chars[self.pos]);
+                                self.pos += 1;
+                            }
+                            self.pos += 2;
+                            self.tokens.push(Tk::new(TokenType::Cblock(t.clone()), t, self.curr_line));
+                        }
+                        temp = String::new();
+                    } else if keywords.contains_key(&temp.as_str()) {
                         self.tokens.push(Tk::new(keywords.get(&temp.as_str()).unwrap().clone(), temp.clone(), self.curr_line));
                         temp = String::new();
                     } else {

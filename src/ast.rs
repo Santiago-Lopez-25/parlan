@@ -58,6 +58,17 @@ pub enum Node {
     },
     FreeVector {
         vector: Tk
+    },
+    GetVector {
+        vector: Tk,
+        index: u64
+    },
+    PushVector {
+        vector: Tk,
+        elem: Box<Node>
+    },
+    Cblock {
+        code: String
     }
 }
 
@@ -103,7 +114,10 @@ impl Program {
             Node::VarDecl { vartype, name, value } => size_of_val(vartype) + size_of_val(name) + self.aux_size(value),
             Node::VarReassing { name, value } => self.aux_size(value) + size_of_val(name),
             Node::NewVector { vectype:_ } => return size_of::<TokenType>(),
-            Node::FreeVector { vector:_ } => return size_of::<Tk>()
+            Node::FreeVector { vector:_ } => return size_of::<Tk>(),
+            Node::GetVector { vector: _, index: _ } => return size_of::<Tk>() + size_of::<u64>(),
+            Node::PushVector { vector: _, elem } => return size_of::<Tk>() + self.aux_size(elem),
+            Node::Cblock { code: _ } => return size_of::<String>()
         }
     }
     pub fn size(&self)->usize {

@@ -153,7 +153,10 @@ impl Backend {
             Node::NewVector { vectype } => {
                 return format!("new__vector(sizeof({}))",tktype2ctype(vectype))
             }
-            Node::Id(id) => id.clone(),
+            Node::GetVector { vector, index } => {
+                return format!("get__vector(usr_{},{index})",vector.span)
+            }
+            Node::Id(id) => format!("usr_{id}"),
             _ => panic!("error: stat Node ({node:?}) passed to Backend::emit_expr")
         }
     }
@@ -192,7 +195,7 @@ impl Backend {
                     params.push(format!("{} {}", tktype2ctype(&param_pair.1), param_pair.0));
                 }
                 let params = format!("({})",params.join(","));
-                self.buff.push_str(format!("{} {name}{params} {{", if name != "main" {crtype} else {"int"}).as_str()); self.push_buff();
+                self.buff.push_str(format!("{} {}{params} {{", if name != "main" {crtype} else {"int"}, if name != "main" {format!("usr_{name}")} else {"main".to_string()}).as_str()); self.push_buff();
                 self.padding += 1;
                 self.emit_stat(block);
                 self.padding -= 1;
@@ -221,6 +224,13 @@ impl Backend {
             }
             Node::FreeVector { vector } => {
                 self.buff.push_str(format!("free__vector(usr_{});",vector.span).as_str()); self.push_buff();
+            }
+            Node::PushVector { vector, elem } => {
+                let expr = self.emit_expr(elem);
+                self.buff.push_str(format!("push__vector(usr_{},(void*){expr});",vector.span).as_str()); self.push_buff();
+            }
+            Node::Cblock { code } => {
+                self.buff.push_str(code.as_str()); self.push_buff();
             }
             _ => panic!("error: expr Node ({node:?}) passed to Backend::emit_stat")
         }

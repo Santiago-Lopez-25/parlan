@@ -262,6 +262,29 @@ impl Parser {
                 self.eat(TokenType::Rparen);
                 return Node::FreeVector { vector }
             }
+            TokenType::GetVector => {
+                self.eat(TokenType::GetVector);
+                self.eat(TokenType::Lparen);
+                let vector = self.eat(TokenType::Id).clone();
+                self.eat(TokenType::Comma);
+                let index = self.peek().span.parse::<u64>().expect("error: expected an integer for the index");
+                self.idx += 1;
+                self.eat(TokenType::Rparen);
+                return Node::GetVector { vector, index }
+            }
+            TokenType::PushVector => {
+                self.eat(TokenType::PushVector);
+                self.eat(TokenType::Lparen);
+                let vector = self.eat(TokenType::Id).clone();
+                self.eat(TokenType::Comma);
+                let elem = Box::new(self.parse_expr());
+                self.eat(TokenType::Rparen);
+                return Node::PushVector { vector, elem }
+            }
+            TokenType::Cblock(code) => {
+                self.idx += 1;
+                return Node::Cblock { code }
+            }
             _ => {
                 panic!("error: unexpected primary token type `{:?}`",self.peek().tk_type)
             }

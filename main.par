@@ -1,6 +1,11 @@
+// a 'c_code' string is directly copied in the output file
+// without any changes
+
+c_code ""const i64 usr_five = 5;""
+c_code ""const i64 usr_INFINITY = 9999999;""
 func main(): int {
-    var vec0: vector = __new_vector(int)
-    __free_vector(vec0)
+    var something: int = INFINITY
+
+    
     return 0
 }
-
