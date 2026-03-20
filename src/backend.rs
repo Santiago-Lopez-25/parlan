@@ -194,7 +194,10 @@ impl Backend {
                 for param_pair in parameters {
                     params.push(format!("{} {}", tktype2ctype(&param_pair.1), param_pair.0));
                 }
-                let params = format!("({})",params.join(","));
+                let params = format!("({})",params.iter().map(|n|{
+                    let splited_n: Vec<&str> = n.split_ascii_whitespace().collect();
+                    format!("{} usr_{}",splited_n[0],splited_n[1])
+                }).collect::<Vec<String>>().join(","));
                 self.buff.push_str(format!("{} {}{params} {{", if name != "main" {crtype} else {"int"}, if name != "main" {format!("usr_{name}")} else {"main".to_string()}).as_str()); self.push_buff();
                 self.padding += 1;
                 self.emit_stat(block);
@@ -218,9 +221,17 @@ impl Backend {
                     self.push_buff();
                 }
             }
+            Node::While { condition, block } => {
+                let cond = self.emit_expr(condition);
+                self.buff.push_str(format!("while ({cond}) {{").as_str()); self.push_buff();
+                self.padding += 1;
+                self.emit_stat(block);
+                self.padding -= 1;
+                self.buff.push('}'); self.push_buff();
+            }
             Node::VarReassing { name, value } => {
                 let value = self.emit_expr(value);
-                self.buff.push_str(format!("{name} = {value};").as_str()); self.push_buff();
+                self.buff.push_str(format!("usr_{name} = {value};").as_str()); self.push_buff();
             }
             Node::FreeVector { vector } => {
                 self.buff.push_str(format!("free__vector(usr_{});",vector.span).as_str()); self.push_buff();

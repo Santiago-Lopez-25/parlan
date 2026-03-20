@@ -49,6 +49,10 @@ pub enum Node {
     Return {
         expr: Box<Node>
     },
+    While {
+        condition: Box<Node>,
+        block: Box<Node>
+    },
     Block {
         nodes: Vec<Node>
     },
@@ -108,6 +112,7 @@ impl Program {
             Node::If { cond, block, else_block } => {
                 return self.aux_size(cond) + self.aux_size(block) + size_of_val(else_block)
             }
+            Node::While { condition, block } => return self.aux_size(condition) + self.aux_size(block),
             Node::Lit(l) => size_of_val(l),
             Node::Return { expr } => self.aux_size(expr),
             Node::Unary { op, value } => size_of_val(op) + self.aux_size(value),

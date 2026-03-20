@@ -1,3 +1,22 @@
+/*
+The Parser or Syntactic analyzer:
+
+the parser is usually [1] the second part of a compiler, it tooks the token stream
+and generates something called an Abstrac Syntax Tree (or for short: AST). the AST
+is a structure that represent the source code syntacticaly, and the parser first 
+checks if the the source code (well, the token stream that represent the source code) is
+syntacticaly correct for the language, that mean the parser of a C compiler is not the same
+as the parser of a Rust compiler, because both has diferent syntaxis! 
+the second thing that the parser does is construct the AST from the tokens, these two 
+processes are usually done at the same time [2]
+
+but for what is the AST? why we need to construct it? well, actually you don't need
+an AST to get a functional compiler [1], but is more common to use it, but why?
+the AST is usually used to simplify the other parts of the compiler (especialy the 
+semantic analisys and backend), because it offers a simple structure that you can
+walk
+*/
+
 #![allow(dead_code)]
 
 use crate::{ast::*, lexer::{Tk, TokenType}};
@@ -37,6 +56,7 @@ impl Parser {
             TokenType::If => self.parse_if(),
             TokenType::Func => self.parse_func_decl(),
             TokenType::Return => self.parse_return(),
+            TokenType::While => self.parse_while(),
             _ => {
                 return self.parse_expr();
             }
@@ -61,6 +81,12 @@ impl Parser {
             return Node::If { cond: Box::new(cond), block: Box::new(block), else_block: Some(Box::new(else_block)) }
         }
         return Node::If { cond: Box::new(cond), block: Box::new(block), else_block: None }
+    }
+    fn parse_while(&mut self)->Node {
+        self.eat(TokenType::While);
+        let condition = Box::new(self.parse_expr());
+        let block = Box::new(self.parse_block());
+        return Node::While { condition, block }
     }
     fn parse_func_decl(&mut self)->Node {
         self.eat(TokenType::Func);
