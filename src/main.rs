@@ -5,7 +5,6 @@ this is the main file, where the pipeline starts and ends
 mod lexer;
 mod parser;
 mod ast;
-mod ir_emiter;
 mod backend;
 
 use lexer::*;
@@ -14,6 +13,7 @@ use backend::*;
 use std::io::Write;
 use std::time::{Duration, Instant};
 use std::fs;
+use std::process;
 
 
 
@@ -23,6 +23,8 @@ fn main() {
     let mut debug = false;
     let mut time = false;
     let mut only_lex = false;
+    let mut gen_exe = false;
+    let mut using_gcc = false;
     let mut source_file = "";
     let args = std::env::args().collect::<Vec<String>>(); // we collect the command line arguments into a vector
     
@@ -45,6 +47,12 @@ fn main() {
             }
             "--lex-only" => {
                 only_lex = true;
+            }
+            "--compile" => {
+                gen_exe = true;
+            }
+            "--gcc" => {
+                using_gcc = true
             }
             file_name => {
                 source_file = file_name
@@ -95,8 +103,25 @@ fn main() {
     lex_time(time_lex,&lex);
     parse_time(time_parse,&program);
     codegen_time(time_codegen,&be);
+    if time {
+        println!("total time: {}", time_lex.as_secs_f32() + time_parse.as_secs_f32() + time_codegen.as_secs_f32());
+    }
 
     // and we write all the generated code into the output file (out.c)
     let mut out = fs::File::create("out.c").expect("cannot create file");
     out.write(be.c.as_bytes()).expect("cannot write the file");
+
+    if gen_exe && using_gcc {
+        let output = process::Command::new("gcc") // we call gcc or clang
+                             .args(["out.c","-o","out.exe"]) // we pass the command arguments
+                             .output()
+                             .expect("failed to compile output c program or gcc doesn't exits in PATH. don't use `--gcc` to use gcc instead");
+        println!("output: {}", String::from_utf8_lossy(&output.stderr));
+    } else if gen_exe && !using_gcc {
+        let output = process::Command::new("clang")
+                             .args(["out.c","-o","out.exe"])
+                             .output()
+                             .expect("failed to compile output c program, or clang doesn't exits in PATH. use `--gcc` to use gcc instead");
+        println!("output: {}", String::from_utf8_lossy(&output.stderr));
+    }
 }

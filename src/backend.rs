@@ -1,3 +1,33 @@
+/*
+The Backend or Code Generation:
+
+*this is by far the most complex part, but anyway i will try to explain it simply*
+
+the backend is the final part of the compiler, it generates the final code. in this simple compiler
+we generate C code as output, some other compilers generate assembly, but that's (much) more complex.
+
+the way we write the code here is simple, we have a buffer where we write the C code and then we
+write this buffer in the output file. but the way we generate the code that we write is the
+complex part, here we walk the AST and generate the C code to represent the Node
+
+and that's all! i feel this is enough to understand how we generate the code, now the real
+complex part is to write down this in code (it took me about 1 month)
+
+here some examples to understand better: 
+
+---- EXAMPLES ----
+
+we walk the AST of the example in `parser.rs`:
+we reach the node FuncDeclNode and we generate the following
+``` 
+void something() {}
+```
+
+this is generated from this boilerplate for functions:
+"[type] [name]([paramters]) {[body]}"
+in this boilerplate we change the placeholders with the real information that the 
+node contains
+*/
 #![allow(dead_code,unused_imports,unused_variables)]
 
 use std::{clone, fmt::format};
@@ -10,6 +40,8 @@ pub struct Backend {
     padding: usize // padding
 }
 
+// this is a boilerplate, it is writed before the real code
+// it contains some utilities like vectors
 pub static BOILERPLATE: &str = r#"#include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -77,7 +109,9 @@ impl Backend {
         self.c.push('\n');
         self.buff.clear();
     }
+    // this functions only generates code for expretions
     fn emit_expr(&mut self, node: &Node)->String {
+        // a simple closure to avoid boilerplate while writing 
         let tktype2ctype = |tktype: &TokenType| {
             match tktype {
                 TokenType::FloatT => "double",
@@ -156,10 +190,11 @@ impl Backend {
             Node::GetVector { vector, index } => {
                 return format!("get__vector(usr_{},{index})",vector.span)
             }
-            Node::Id(id) => format!("usr_{id}"),
+            Node::Id(id) => format!("usr_{id}"), // we generate every identifier with a sufix ('usr_')
             _ => panic!("error: stat Node ({node:?}) passed to Backend::emit_expr")
         }
     }
+    // this functions only generates code for statements
     fn emit_stat(&mut self, node: &Node) {
         let tktype2ctype = |tktype: &TokenType| {
             match tktype {
@@ -196,7 +231,7 @@ impl Backend {
                 }
                 let params = format!("({})",params.iter().map(|n|{
                     let splited_n: Vec<&str> = n.split_ascii_whitespace().collect();
-                    format!("{} usr_{}",splited_n[0],splited_n[1])
+                    format!("{} usr_{}",splited_n[0],splited_n[1]) // we add the 'usr_' sufix to every parameter
                 }).collect::<Vec<String>>().join(","));
                 self.buff.push_str(format!("{} {}{params} {{", if name != "main" {crtype} else {"int"}, if name != "main" {format!("usr_{name}")} else {"main".to_string()}).as_str()); self.push_buff();
                 self.padding += 1;
@@ -246,6 +281,8 @@ impl Backend {
             _ => panic!("error: expr Node ({node:?}) passed to Backend::emit_stat")
         }
     }
+    // main function
+    // for every node in our program we call `emit_stat`
     pub fn emit_c(&mut self, prog: &Program) {
         for node in &prog.nodes {
             self.emit_stat(node);

@@ -1,20 +1,92 @@
 /*
 The Parser or Syntactic analyzer:
 
-the parser is usually [1] the second part of a compiler, it tooks the token stream
+the parser is usually (1) the second part of a compiler, it tooks the token stream
 and generates something called an Abstrac Syntax Tree (or for short: AST). the AST
 is a structure that represent the source code syntacticaly, and the parser first 
 checks if the the source code (well, the token stream that represent the source code) is
 syntacticaly correct for the language, that mean the parser of a C compiler is not the same
 as the parser of a Rust compiler, because both has diferent syntaxis! 
 the second thing that the parser does is construct the AST from the tokens, these two 
-processes are usually done at the same time [2]
+processes are usually done at the same time (2).
 
 but for what is the AST? why we need to construct it? well, actually you don't need
-an AST to get a functional compiler [1], but is more common to use it, but why?
+an AST to get a functional compiler (1), but is more common to use it, but why?
 the AST is usually used to simplify the other parts of the compiler (especialy the 
 semantic analisys and backend), because it offers a simple structure that you can
-walk
+walk and comprobe its structure. the AST is a tree structure conformed by nodes, these
+nodes can be root nodes, leaf nodes or normal nodes (well, i name them like this); a root 
+node is a node that doesn't have a father node (is a node that is not contained by other), 
+leaf nodes are nodes that doesn't have child nodes (is a node that does not contain other, 
+like numbers or literals); and there are normal nodes, these have both a father node and child(s) node(s)
+
+another important thing in a parser is the operator precedence. operator precedence just says that
+some operations should be done first than others.
+in this compiler we use the following operator precedence:
+
+equality ('==','!=') ->
+comparation ('>','<','<=','>=') ->
+terms ('+', '-') ->
+factors ('*','/') ->
+unary ('-', 'not') ->
+call (function calls) ->
+primarys (literals)
+
+this should be read backwards, that mean primarys must be parsed before calls, calls before unary 
+operators, unary operators before factors, and so on
+
+almost every function here has the following structure (except parse_primary and parse_unary):
+
+```
+function parse_something() {
+    left = parse_next_precedence_level()
+    if there is the operator X {
+        consume_operator(X)
+        right = parse_next_precedence_level()
+        return Node {left, right}
+    }
+    return left
+}
+```
+this structure ensures that if the operator was not found, we just go to the next precedence
+
+i will put some examples below, but you need to understand that an AST can be textualy
+represented several forms.
+
+---- EXAMPLES ----
+
+with the previous stream of tokens we created (see the docs in lexer.rs file):
+```
+[
+TK_voidtype,
+TK_identifier,
+TK_left_paren,
+TK_right_paren,
+TK_left_brace,
+TK_right_brace
+]
+```
+We can create the following AST (i hope my example is clear):
+```
+FuncDeclNode {
+    type: TK_voidtype
+    name: IdentifierNode { "something" }
+    body: BlockNode {
+        nodes: [
+        
+        ]
+    }
+}
+```
+
+---- NOTES ----
+
+[1]. in the book 'crafting interpreters' by Robert Nystrom, Robert creates actually a compiler to bytecode
+    instead of a interpreter (the second part, using C. the first part uses Java). and this doesn't have a
+    parser or an AST, it just translate the token stream to bytecode
+
+[2]. well, i will be more clear: with "at the same time" i'm not referring to the fact that it uses multithreating or 
+    asynchronous programming, i mean the function that analyzes the token stream, also generates the node after the analysis
 */
 
 #![allow(dead_code)]
@@ -34,6 +106,8 @@ impl Parser {
             idx: 0
         }
     }
+    // ---- auxiliar functions ----
+
     fn peek(&mut self)->&Tk {
         if self.idx < self.tokens.len() {
             return &self.tokens[self.idx]
@@ -51,6 +125,7 @@ impl Parser {
     }
 
     fn parse_decl(&mut self)->Node {
+        // here we select the function to parse the current structure (may be a statement or an expretion)
         match self.peek().tk_type {
             TokenType::Var => self.parse_var_decl(),
             TokenType::If => self.parse_if(),
@@ -63,15 +138,18 @@ impl Parser {
         }
     }
     fn parse_var_decl(&mut self)->Node {
+        // here we analyze the structure of a variable declaration
         self.eat(TokenType::Var);
         let name = self.eat(TokenType::Id).span.clone();
         self.eat(TokenType::Colon);
         let vartype = self.eat(self.tokens[self.idx].tk_type.clone()).tk_type.clone();
         self.eat(TokenType::Assing);
         let expr = self.parse_expr();
+        // and here we generate the code
         return Node::VarDecl { vartype, name, value: Box::new(expr) }    
     }
     fn parse_if(&mut self)->Node {
+        // again the same thing here
         self.eat(TokenType::If);
         let cond = self.parse_expr();
         let block = self.parse_block();
@@ -83,12 +161,14 @@ impl Parser {
         return Node::If { cond: Box::new(cond), block: Box::new(block), else_block: None }
     }
     fn parse_while(&mut self)->Node {
+        // we use the same logic
         self.eat(TokenType::While);
         let condition = Box::new(self.parse_expr());
         let block = Box::new(self.parse_block());
         return Node::While { condition, block }
     }
     fn parse_func_decl(&mut self)->Node {
+        // we use  the same logic
         self.eat(TokenType::Func);
         let name = self.eat(TokenType::Id).span.clone();
         self.eat(TokenType::Lparen);
@@ -113,11 +193,13 @@ impl Parser {
         return Node::Func { name, parameters, rettype, block: Box::new(block) }
     }
     fn parse_return(&mut self)->Node {
+        // we use the same logic
         self.eat(TokenType::Return);
         let expr = self.parse_expr();
         return Node::Return { expr: Box::new(expr) }
     }
     fn parse_block(&mut self)->Node {
+        // and the same logic
         self.eat(TokenType::Lbrace);
         let mut nodes = Vec::new();
         while self.peek().tk_type != TokenType::Rbrace && self.peek().tk_type != TokenType::Eof {

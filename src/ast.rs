@@ -1,3 +1,8 @@
+/*
+in this file i define all the nodes, this is really simple so i hope you understand 
+without extense documentiation
+*/
+
 #![allow(dead_code,unused_imports)]
 
 use crate::lexer::{Tk, TokenType};

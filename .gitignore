@@ -5,5 +5,8 @@ out.c
 parlan.exe
 parlan.pdb
 out_test.exe
+out.exe
+make_simply_test.py
+test.py
 parlan_dbg.exe
 /.VSCodeCounter
