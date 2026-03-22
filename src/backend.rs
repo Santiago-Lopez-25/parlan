@@ -118,6 +118,7 @@ impl Backend {
                 TokenType::BoolT => "unsigned char",
                 TokenType::IntT => "i64",
                 TokenType::StringT => "char*",
+                TokenType::VoidT => "void",
                 TokenType::VecT => "vector",
                 _ => panic!("error: unkown tokentype `{tktype:?}` for type")
             }
@@ -165,6 +166,12 @@ impl Backend {
                     9 => {
                         return format!("{lhs} != {rhs}")
                     }
+                    10 => {
+                        return format!("{lhs} && {rhs}")
+                    }
+                    11 => {
+                        return format!("{lhs} || {rhs}")
+                    }
                     other => panic!("error: unknown operator with value: {}",other)
                 }
             }
@@ -202,6 +209,7 @@ impl Backend {
                 TokenType::BoolT => "unsigned char",
                 TokenType::IntT => "i64",
                 TokenType::StringT => "char*",
+                TokenType::VoidT => "void",
                 TokenType::VecT => "vector",
                 _ => panic!("error: unkown tokentype `{tktype:?}` for type ")
             }

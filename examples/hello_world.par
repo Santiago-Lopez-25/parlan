@@ -1,0 +1,7 @@
+/*
+hello world example
+*/
+func main(): int {
+    c_code ""printf("hello world");""
+    return 0
+}

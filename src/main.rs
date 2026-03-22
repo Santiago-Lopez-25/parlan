@@ -22,17 +22,15 @@ fn main() {
     // this is especially for development
     let mut debug = false;
     let mut time = false;
-    let mut only_lex = false;
     let mut gen_exe = false;
     let mut using_gcc = false;
     let mut source_file = "";
+    let mut output_file = "";
     let args = std::env::args().collect::<Vec<String>>(); // we collect the command line arguments into a vector
     
     /*
     here, i use a infinite loop instead of a for loop because if we use a for loop
     we cannot advance the index to access the next argument.
-    well, actually with only this 3 commands we don't need to advance the index to see the next argument because we don't need to see it
-    but i use a loop statement anyway to show the idea
     */
     let mut i: usize = 1;
     loop {
@@ -45,14 +43,15 @@ fn main() {
             "--time" => {
                 time = true;
             }
-            "--lex-only" => {
-                only_lex = true;
-            }
             "--compile" => {
                 gen_exe = true;
             }
             "--gcc" => {
                 using_gcc = true
+            }
+            "-o" => {
+                i += 1;
+                output_file = args[i].as_str();
             }
             file_name => {
                 source_file = file_name
@@ -81,11 +80,7 @@ fn main() {
     let mut lex = Lexer::new(source); // we initialize a new Lexer instance
     lex.lexer(); // and we tokenize the source code into a vector of tokens
     let time_lex = start.elapsed(); // now we stop the clock and see how much time it took to tokenize
-    
-    if only_lex { // if we passed the `--lex-only` flag, we just want the tokens
-        lex_time(time_lex,&lex);
-        return;
-    }
+
 
     // now we do the same process as above but for the generation of the AST
     start = Instant::now();
@@ -108,18 +103,18 @@ fn main() {
     }
 
     // and we write all the generated code into the output file (out.c)
-    let mut out = fs::File::create("out.c").expect("cannot create file");
+    let mut out = fs::File::create(format!("{}.c", if output_file != "" {output_file} else {"out"}).as_str()).expect("cannot create file");
     out.write(be.c.as_bytes()).expect("cannot write the file");
 
     if gen_exe && using_gcc {
         let output = process::Command::new("gcc") // we call gcc or clang
-                             .args(["out.c","-o","out.exe"]) // we pass the command arguments
+                             .args([format!("{}.c", if output_file != "" {output_file} else {"out"}).as_str(),"-o","out.exe"]) // we pass the command arguments
                              .output()
                              .expect("failed to compile output c program or gcc doesn't exits in PATH. don't use `--gcc` to use gcc instead");
         println!("output: {}", String::from_utf8_lossy(&output.stderr));
     } else if gen_exe && !using_gcc {
         let output = process::Command::new("clang")
-                             .args(["out.c","-o","out.exe"])
+                             .args([format!("{}.c", if output_file != "" {output_file} else {"out"}).as_str(),"-o","out.exe"])
                              .output()
                              .expect("failed to compile output c program, or clang doesn't exits in PATH. use `--gcc` to use gcc instead");
         println!("output: {}", String::from_utf8_lossy(&output.stderr));

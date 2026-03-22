@@ -268,7 +268,7 @@ impl Parser {
         return left;
     }
     fn parse_factor(&mut self)->Node {
-        let mut left = self.parse_unary();
+        let mut left = self.parse_or();
         while [TokenType::Star,TokenType::Slash].contains(&self.peek().tk_type) {
             let op = self.peek().tk_type.clone();
             self.idx += 1;
@@ -278,7 +278,23 @@ impl Parser {
                     TokenType::Slash => 3,
                     _ => panic!("error: some inexplicable error ocurred")
                 }
-            })(op), right: Box::new(self.parse_unary()) }
+            })(op), right: Box::new(self.parse_or()) }
+        }
+        return left;
+    }
+    fn parse_or(&mut self)->Node {
+        let mut left = self.parse_and();
+        while self.peek().tk_type == TokenType::Or {
+            self.idx += 1;
+            left = Node::BinOp { left: Box::new(left), op: 11, right: Box::new(self.parse_and()) }
+        }
+        return left;
+    }
+    fn parse_and(&mut self)->Node {
+        let mut left = self.parse_unary();
+        while self.peek().tk_type == TokenType::And {
+            self.idx += 1;
+            left = Node::BinOp { left: Box::new(left), op: 10, right: Box::new(self.parse_unary()) }
         }
         return left;
     }

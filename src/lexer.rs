@@ -56,6 +56,8 @@ pub enum TokenType {
     Star,
     Slash,
     Not,
+    And,
+    Or,
     Eq,
     Ne,
     Lt,
@@ -70,6 +72,7 @@ pub enum TokenType {
     FloatT,
     BoolT,
     StringT,
+    VoidT,
     VecT,
     IntL(usize),
     FloatL(f64),
@@ -142,6 +145,7 @@ impl Lexer {
             ("float",TokenType::FloatT),
             ("bool",TokenType::BoolT),
             ("string",TokenType::StringT),
+            ("void",TokenType::VoidT),
             ("vector",TokenType::VecT),
             ("func",TokenType::Func),
             ("while",TokenType::While),
@@ -150,7 +154,9 @@ impl Lexer {
             ("return",TokenType::Return),
             ("true",TokenType::BoolL(true)),
             ("false",TokenType::BoolL(false)),
-            ("not",TokenType::Not)
+            ("not",TokenType::Not),
+            ("and", TokenType::And),
+            ("or", TokenType::Or)
         ]);
         // we use the same aproach as above, because the symbols will always be the same
         let symbols = HashMap::from([
