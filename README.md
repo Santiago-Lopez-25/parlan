@@ -77,4 +77,4 @@ if you want to learn how the parlan language work and how to write on it, read t
 in every source file of this proyect i tried to add as many documentation comments as posible. i hope they help you to understand every step
 
 >[!NOTE]
-> my english is not the best, so the comments may have several typos. feel free to send a pull request fixing them!
+> I've done my best to document every single file to make the logic easy to follow. Since English is not my native language, you might find some typos. Feel free to open a Pull Request to help me improve the documentation!
