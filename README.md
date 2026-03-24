@@ -22,6 +22,8 @@ root
 │   Cargo.toml
 │   README.md
 │
+├───examples (code examples)
+|
 ├───src (Compiler Source Code)
 │       ast.rs      - Definition of the Abstract Syntax Tree
 │       backend.rs  - C code generation logic
@@ -62,7 +64,7 @@ Here is how a simple program looks in Parlan:
 ```
 // simple 'hello world' example
 func main(): int {
-        c_code ""printf("hello world");""
+        c_code { printf("hello world"); }
         return 0;
 }
 ```

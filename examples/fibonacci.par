@@ -7,7 +7,7 @@ func fibonacci(n: int): int {
 
 func main(): int {
     var fib20: int = fibonacci(20)
-    c_code ""printf("fib20: %d", usr_fib20);"" //remember to add the 'usr_' sufix
+    c_code { printf("fib20: %d", usr_fib20); } //remember to add the 'usr_' sufix
 
     return 0
 }

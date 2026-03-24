@@ -57,6 +57,6 @@ i64 usr_fibonacci(i64 usr_n) {
 }
 int main() {
     i64 usr_fib20 = usr_fibonacci(20);
-    printf("fib20: %d", usr_fib20);
+     printf("fib20: %d", usr_fib20); 
     return 0;
 }

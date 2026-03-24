@@ -205,16 +205,26 @@ impl Lexer {
                     }
                     if temp.as_str() == "c_code" { // we need to handle our special case of c_code string
                         while chars[self.pos] == ' ' {self.pos += 1}
-                        if chars[self.pos] == '"' && chars[self.pos+1] == '"' {
-                            self.pos += 2;
-                            let mut t = String::new();
-                            while !(chars[self.pos] == '"' && chars[self.pos+1] == '"') {
-                                t.push(chars[self.pos]);
+                        temp = String::new();
+                        let mut brace_counter = 1;
+                        self.pos += 1;
+                        while brace_counter > 0 {
+                            if chars[self.pos] == '{' { brace_counter += 1; temp.push(chars[self.pos]); self.pos += 1; }
+                            else if chars[self.pos] == '}' { 
+                                brace_counter -= 1; 
+                                if brace_counter == 0 {
+                                    self.pos += 1;
+                                } else {
+                                    temp.push(chars[self.pos]);
+                                    self.pos += 1
+                                }
+                            }
+                            else {
+                                temp.push(chars[self.pos]);
                                 self.pos += 1;
                             }
-                            self.pos += 2; 
-                            self.tokens.push(Tk::new(TokenType::Cblock(t.clone()), t, self.curr_line)); // we push a new token
                         }
+                        self.tokens.push(Tk::new(TokenType::Cblock(temp.clone()), temp.clone(), self.curr_line));
                         temp = String::new(); // we restore the temporal string
                     } else if keywords.contains_key(&temp.as_str()) { // if our keyword hashmap contains the auxiliar string, is a keyword
                         self.tokens.push(Tk::new(keywords.get(&temp.as_str()).unwrap().clone(), temp.clone(), self.curr_line));

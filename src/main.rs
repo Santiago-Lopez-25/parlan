@@ -110,7 +110,7 @@ fn main() {
         let output = process::Command::new("gcc") // we call gcc or clang
                              .args([format!("{}.c", if output_file != "" {output_file} else {"out"}).as_str(),"-o","out.exe"]) // we pass the command arguments
                              .output()
-                             .expect("failed to compile output c program or gcc doesn't exits in PATH. don't use `--gcc` to use gcc instead");
+                             .expect("failed to compile output c program or gcc doesn't exits in PATH. don't use `--gcc` to use clang instead");
         println!("output: {}", String::from_utf8_lossy(&output.stderr));
     } else if gen_exe && !using_gcc {
         let output = process::Command::new("clang")

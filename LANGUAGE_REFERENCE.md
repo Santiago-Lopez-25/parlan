@@ -109,7 +109,7 @@ Parlan has vector instrinsics, that mean you can create, manipulate and delete v
 Since Parlan compiles to C, you can inject raw C code directly into your Parlan source. This is useful for calling standard library functions like `printf`.
 
 ```
-c_code ""printf("Value: %d\n", usr_x);""
+c_code { printf("Value: %d\n", usr_x); }
 ```
 > **How it works:** The Parlan compiler takes the string inside the double quotes `""` and places it directly into the generated `out.c` file during the Codegen phase.
 

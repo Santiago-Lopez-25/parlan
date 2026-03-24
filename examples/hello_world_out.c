@@ -50,6 +50,6 @@ void* get__vector(vector vec, u64 idx) {
 }
 
 int main() {
-    printf("hello world");
+     printf("hello world"); 
     return 0;
 }
