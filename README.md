@@ -9,7 +9,7 @@ Parlan was created as an educational tool to help beginners understand the inner
 The compiler follows a traditional three-stage architecture:
 1. **Lexical Analysis:** Scans source text and converts it into a stream of tokens.
 2. **Parsing:** Generates an **Abstract Syntax Tree (AST)** from the tokens.
-3. **Codegen:** Generates optimized **C code** from the AST.
+3. **Codegen:** Generates **C code** from the AST.
 
 > [!TIP]
 > If you want to learn how a compiler is implemented, feel free to read the comments in every source file—they are designed to guide you through the logic!

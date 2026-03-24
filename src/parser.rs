@@ -35,7 +35,7 @@ primarys (literals)
 this should be read backwards, that mean primarys must be parsed before calls, calls before unary 
 operators, unary operators before factors, and so on
 
-almost every function here has the following structure (except parse_primary and parse_unary):
+almost every function that handles expretions here has the following structure (except parse_primary and parse_unary):
 
 ```
 function parse_something() {
@@ -48,7 +48,7 @@ function parse_something() {
     return left
 }
 ```
-this structure ensures that if the operator was not found, we just go to the next precedence
+this structure ensures that if the operator was not found, we go to the next precedence
 
 i will put some examples below, but you need to understand that an AST can be textualy
 represented several forms.
