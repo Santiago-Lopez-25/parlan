@@ -42,7 +42,7 @@ To try out Parlan, follow these steps:
 1. Clone the repository and navigate into it:
 
 ``` Bash
-git clone https://github.com/Santiago-Lopez-25/parlan.git
+git clone https://github.com/parlan-lang/parlan.git
 cd parlan
 ```
 2. Create a source file:
