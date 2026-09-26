@@ -23,6 +23,7 @@ pub struct Config {
     pub cmd: Command,
     pub dump_tokens: bool,
     pub dump_ast: bool,
+    pub lexing_only: bool,
 }
 
 const HELP_MSG: &str = 
@@ -40,12 +41,14 @@ Options:
 Debug Options:
         --dump-tokens    Print the token stream to stderr
         --dump-ast       Print the ast to stderr
+        --lexing-only    Stop after tokenizing input
 "#;
 
 pub fn cli() -> Result<Config, lexopt::Error> {
     let mut command = None;
     let mut dump_tokens = false;
     let mut dump_ast = false;
+    let mut lexing_only = false;
     let mut parser = lexopt::Parser::from_env();
 
     while let Some(arg) = parser.next()? {
@@ -69,6 +72,7 @@ pub fn cli() -> Result<Config, lexopt::Error> {
             }
             Long("dump-tokens") => dump_tokens = true,
             Long("dump-ast") => dump_ast = true,
+            Long("lexing-only") => lexing_only = true,
             _ => return Err(arg.unexpected())
         }
     }
@@ -76,7 +80,8 @@ pub fn cli() -> Result<Config, lexopt::Error> {
     Ok(Config { 
         cmd: command.unwrap(), 
         dump_tokens,
-        dump_ast
+        dump_ast,
+        lexing_only,
     })
 }
 
