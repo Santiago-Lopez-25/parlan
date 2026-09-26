@@ -51,6 +51,10 @@ fn main() {
                 }
             }
 
+            if config.lexing_only {
+                return;
+            }
+
             let mut parser = parser::Parser::new(file_id, &src, lexer);
             let ast = parser.parse();
 
