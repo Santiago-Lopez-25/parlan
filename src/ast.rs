@@ -4,6 +4,8 @@
 // TODO: delete this 
 #![allow(unused)]
 
+use crate::error::{SourceFile, Span};
+
 /// Represents a type
 #[derive(Debug)]
 pub enum Ty {
@@ -23,7 +25,7 @@ pub enum Literal {
 pub enum Expr<'expr> {
     Literal(Literal),
     Id(&'expr str),
-    Error((usize, usize)),
+    Error(Span),
 }
 
 /// Represents a statement
@@ -37,7 +39,7 @@ pub enum Stmt<'stmt> {
     Block {
         stmts: Vec<Stmt<'stmt>>
     },
-    Error((usize, usize))
+    Error(Span)
 }
 
 /// Represents an item inside an module ([`AstModule`])
@@ -49,12 +51,12 @@ pub enum AstItem<'item> {
         ret: Ty,
         body: Stmt<'item>  
     },
-    Error((usize, usize))
+    Error(Span)
 }
 
 /// Represents a single compilation unit (a single file)
 #[derive(Debug)]
 pub struct AstModule<'module> {
-    pub file_id: usize,
+    pub file: &'module SourceFile<'module>,
     pub items: Vec<AstItem<'module>>,
 }

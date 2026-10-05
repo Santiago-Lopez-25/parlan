@@ -1,27 +1,23 @@
 //! Syntactic Analyzer or Parser using a Recursive Descent approach
 
-fn span_to_range(span: (usize, usize)) -> std::ops::Range<usize> {
-    span.0..span.1
-}
-
 use crate::ast::*;
+use crate::error::*;
+use crate::error;
 use crate::lexer::*;
-
-use codespan_reporting::diagnostic::*;
 
 /// Represents the Syntactic Analyzer
 pub struct Parser<'parser> {
     lexer: std::iter::Peekable<Lexer<'parser>>,
-    file_id: usize,
+    file: &'parser SourceFile<'parser>,
     src: &'parser str,
-    pub errors: Vec<Diagnostic<usize>>
+    pub errors: Vec<Diagnostic>
 }
 
 impl<'parser> Parser<'parser> {
-    pub fn new(file_id: usize, src: &'parser str, lexer: Lexer<'parser>) -> Self {
+    pub fn new(file: &'parser SourceFile, src: &'parser str, lexer: Lexer<'parser>) -> Self {
         Self {
             lexer: lexer.peekable(),
-            file_id,
+            file,
             src,
             errors: Vec::new()
         }
@@ -59,11 +55,9 @@ impl<'parser> Parser<'parser> {
 
     /// Skips tokens until it reaches a synchronization point (a `;`, `var`, or `func`)
     fn synchronize(&mut self) {
-        self.next_token();
-
         while let Some(tok) = self.peek_token() {
             match tok.kind {
-                TokenKind::Semi | TokenKind::VarKw | TokenKind::FuncKw => return,
+                TokenKind::Semi | TokenKind::VarKw | TokenKind::FuncKw | TokenKind::CloseBrace => return,
                 _ => {
                     self.next_token();
                 }
@@ -77,52 +71,53 @@ impl<'parser> Parser<'parser> {
         &mut self, 
         kind: TokenKind,
         msg: String,
-        eof_msg: String,
         label_msg: String,
-    ) -> Result<Token, (usize, usize)> {
-        match self.next_token() {
-            Some(tk) if tk.kind == kind => Ok(tk),
+    ) -> Result<Token, Span> {
+        match self.peek_token() {
+            Some(tk) if tk.kind == kind => Ok(self.next_token().unwrap()),
             Some(other) => {
+                let other = other.clone();
                 self.errors.push(
-                    Diagnostic::error()
-                        .with_message(msg)
-                        .with_label(
-                            Label::primary(self.file_id, span_to_range(other.span)).with_message(label_msg)
-                        )
+                    error!(
+                        other.span,
+                        label_msg,
+                        "{msg}"
+                    )
                 );
                 self.synchronize();
                 Err(other.span)
             }
             None => {
                 self.errors.push(
-                    Diagnostic::error()
-                        .with_message("unexpected end of file")
-                        .with_label(
-                            Label::primary(self.file_id, self.src.len() - 1..self.src.len()).with_message(eof_msg)
-                        )      
+                    error!(
+                        Span(self.src.len() - 1, self.src.len()),
+                        "".into(),
+                        "unexpected end of file"
+                    )
                 );
-                Err((self.src.len() - 1, self.src.len()))
+                Err(Span(self.src.len() - 1, self.src.len()))
             }
         }
     }
 
-    fn get_span(&self, span: (usize, usize)) -> &str {
+    fn get_span(&self, span: Span) -> &str {
         &self.src[span.0..span.1]
     }
 
     fn parse_expr(&mut self) -> Expr<'parser> {
-        let start_span = self.peek_token().map(|t| t.span).unwrap_or((0,0));
+        let start_span = self.peek_token().map(|t| t.span).unwrap_or(Span(0,0));
         
         if let Some(token) = self.next_token() {
             match token.kind {
                 TokenKind::Int => Expr::Literal(Literal::Integer(self.get_span(token.span).parse().unwrap())),
                 _ => {
                     self.errors.push(
-                        Diagnostic::error()
-                            .with_message(format!("expected an expression, found `{}` instead", self.get_span(token.span)))
-                            .with_label(
-                                Label::primary(self.file_id, span_to_range(token.span)).with_message("expected expression")
-                            )
+                        error!(
+                            token.span,
+                            "expected an expression".into(),
+                            "expected an expression, found `{}` instead",
+                            self.get_span(token.span)
+                        )
                     );
                     self.synchronize();
                     Expr::Error(start_span)   
@@ -130,18 +125,18 @@ impl<'parser> Parser<'parser> {
             }
         } else {
             self.errors.push(
-                    Diagnostic::error()
-                        .with_message("unexpected end of file")
-                        .with_label(
-                            Label::primary(self.file_id, span_to_range(start_span)).with_message("expected an expression")
-                        )      
-                );
-                return Expr::Error(start_span)
+                error!(
+                    start_span,
+                    "expected an expression".into(),
+                    "unexpected end of file"
+                )
+            );
+            return Expr::Error(start_span)
         }
     }
 
     fn parse_stmt_var_decl(&mut self) -> Stmt<'parser> {
-        let start_span = self.peek_token().map(|t| t.span).unwrap_or((0,0));
+        let start_span = self.peek_token().map(|t| t.span).unwrap_or(Span(0,0));
 
         // consume `var`
         self.next_token();
@@ -149,12 +144,11 @@ impl<'parser> Parser<'parser> {
         let curr = self.peek_token().unwrap().kind;
         let name = match self.expect(
             TokenKind::Id, 
-            format!("expected identifier after `var`, found {} instead", curr), 
-            "unterminated `var` statemet".into(), 
-            "expected identifier".into())
-        {
+            format!("expected identifier after `var`, found {} instead", curr),
+            "expected identifier".into()
+        ) {
             Ok(tok) => tok,
-            Err(span) => return Stmt::Error((start_span.0,span.1))
+            Err(span) => return Stmt::Error(Span(start_span.0, span.1))
         };
 
         // TODO: accept an optional explicit type
@@ -164,11 +158,10 @@ impl<'parser> Parser<'parser> {
         match self.expect(
             TokenKind::Assign, 
             format!("expected `=`, found {} instead", curr), 
-            "unterminaded variable declaration".into(), 
             "expected `=` here".into()
         ) {
             Ok(_) => {}
-            Err(span) => return Stmt::Error((start_span.0,span.1))
+            Err(span) => return Stmt::Error(Span(start_span.0, span.1))
         };
 
         let expr = self.parse_expr();
@@ -176,11 +169,10 @@ impl<'parser> Parser<'parser> {
         match self.expect(
             TokenKind::Semi, 
             "expected `;` after variable declaration".into(), 
-            "unterminated variable declaration".into(), 
             "expected `;` here".into()
         ) {
             Ok(_) => {}
-            Err(span) => return Stmt::Error((start_span.0,span.1))
+            Err(span) => return Stmt::Error(Span(start_span.0, span.1))
         };
 
         Stmt::VarDecl {
@@ -194,8 +186,7 @@ impl<'parser> Parser<'parser> {
         match self.expect(
             TokenKind::OpenBrace, 
             "expected `{`".into(), 
-            "unterminaded block statement".into(), 
-            "expected `{` here".into()
+            "expected `{` here".into(),
         ) {
             Ok(_) => {},
             Err(span) => return Stmt::Error(span)
@@ -203,14 +194,13 @@ impl<'parser> Parser<'parser> {
 
         let mut stmts = Vec::new();
 
-        while self.peek_token().unwrap().kind != TokenKind::CloseBrace {
+        while self.peek_token().is_some() && self.peek_token().unwrap().kind != TokenKind::CloseBrace {
             stmts.push(self.parse_stmt());
         }
 
         match self.expect(
             TokenKind::CloseBrace, 
             "expected `}`".into(), 
-            "unterminaded block statement".into(), 
             "expected `}` here".into()
         ) {
             Ok(_) => {},
@@ -228,64 +218,61 @@ impl<'parser> Parser<'parser> {
                 let span = other.span;
 
                 self.errors.push(
-                    Diagnostic::error()
-                        .with_message("expected an statement")
-                        .with_label(
-                            Label::primary(self.file_id, span_to_range(span))
-                        )
+                    error!(
+                        span,
+                        "".into(),
+                        "expected a statemet"
+                    )
                 );
                 self.synchronize();
                 Stmt::Error(span)
             }
             None => {
                 self.errors.push(
-                    Diagnostic::error()
-                        .with_message("unexpected end of file, expected an statement")
-                        .with_label(
-                            Label::primary(self.file_id, self.src.len()..self.src.len()).with_message("expected an statement")
-                        )
+                    error!(
+                        Span(self.src.len() - 1, self.src.len()),
+                        "expected a statement".into(),
+                        "unexpected end of file, expected an statement"
+                    )
                 );
-                Stmt::Error((self.src.len(), self.src.len()))
+                Stmt::Error(Span(self.src.len(), self.src.len()))
             }
         }
     }
 
     fn parse_item_func_decl(&mut self) -> AstItem<'parser> {
-        let start_span = self.peek_token().map(|t| t.span).unwrap_or((0,0));
+        let start_span = self.peek_token().map(|t| t.span).unwrap_or(Span(0,0));
 
         // consume `func`
         self.next_token();
 
         let name = match self.expect(
             TokenKind::Id, 
-            "expected identifier after `func`".into(), 
-            "unterminaded function declaration".into(), 
+            "expected identifier after `func`".into(),
             "expected identifier".into()
         ) {
             Ok(tk) => tk,
-            Err(span) => return AstItem::Error((start_span.0, span.1))
+            Err(span) => return AstItem::Error(Span(start_span.0, span.1))
         };
 
         match self.expect(
             TokenKind::OpenParen, 
             "expected `(` after function name".into(), 
-            "unterminaded function declaration".into(), 
-            "expected `(`".into()
+            "unterminaded function declaration".into(),
         ) {
             Ok(_) => {},
-            Err(span) => return AstItem::Error((start_span.0, span.1))
+            Err(span) => return AstItem::Error(Span(start_span.0, span.1))
         };
 
-        let args : Vec<(Expr, Ty)>= vec![];
+        let args: Vec<(Expr, Ty)> = vec![];
 
         match self.expect(
             TokenKind::CloseParen, 
-            "expected `)`, functions doesn't support parameters yet".into(), 
-            "unterminaded function declaration".into(), 
+            "expected `)`, functions doesn't support parameters yet".into(),
             "expected `)`".into()
         ) {
             Ok(_) => {},
-            Err(span) => return AstItem::Error((start_span.0, span.1))
+            Err(span) => return AstItem::Error(Span(start_span.0, span.1))
         };
 
         // TODO: accept optional return type (or default to void)
@@ -306,29 +293,25 @@ impl<'parser> Parser<'parser> {
             Some(tk) if tk.kind == TokenKind::FuncKw => self.parse_item_func_decl(),
             Some(other) => {
                 let span = other.span;
-
                 self.errors.push(
-                    Diagnostic::error()
-                        .with_message("expected an item")
-                        .with_label(
-                            Label::primary(self.file_id, span_to_range(span))
-                        )
-                        .with_note(
-                            r#"an item can be either a function or a constant"#
-                        )
+                    error!(
+                        span,
+                        "".into(),
+                        "expected an item"
+                    )
                 );
                 self.synchronize();
                 AstItem::Error(span)
             }
             None => {
                 self.errors.push(
-                    Diagnostic::error()
-                        .with_message("unexpected end of file, expected an item")
-                        .with_label(
-                            Label::primary(self.file_id, self.src.len()..self.src.len()).with_message("expected an item")
-                        )
+                    error!(
+                        Span(self.src.len() - 1, self.src.len()),
+                        "expected an item".into(),
+                        "unexpected end of file"
+                    )
                 );
-                AstItem::Error((self.src.len(), self.src.len()))
+                AstItem::Error(Span(self.src.len(), self.src.len()))
             }
         }
     }
@@ -341,7 +324,7 @@ impl<'parser> Parser<'parser> {
         }
 
         AstModule { 
-            file_id: self.file_id, 
+            file: self.file, 
             items 
         }
     }

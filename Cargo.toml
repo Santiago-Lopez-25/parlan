@@ -4,5 +4,4 @@ version = "0.3.0"
 edition = "2024"
 
 [dependencies]
-codespan-reporting = "0.13.1"
 lexopt = "0.3.2"

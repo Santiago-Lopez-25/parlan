@@ -1,6 +1,7 @@
 //! Lexer/Tokenizer and Token definitions
 
-use codespan_reporting::diagnostic::*;
+use crate::error::*;
+use crate::error;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TokenKind {
@@ -43,18 +44,17 @@ impl std::fmt::Display for TokenKind {
 #[derive(Debug, Clone)]
 pub struct Token {
     pub kind: TokenKind,
-    pub span: (usize, usize),
+    pub span: Span,
 }
 
 #[derive(Clone)]
 pub struct Lexer<'lex> {
     cursor: usize,
     bytes: &'lex [u8],
-    file_id: usize,
 }
 
 impl<'lex> Lexer<'lex> {
-    pub fn new(src: &'lex str, file_id: usize) -> Self {
+    pub fn new(src: &'lex str) -> Self {
         let bytes = src.as_bytes();
         if bytes[bytes.len() - 1] != b'\0' {
             eprintln!("\x1b[31;1minternal error:\x1b[0m an unexpected error happend inside the compiler itself.\ninfo: lexer expected NUL terminated source.");
@@ -64,12 +64,10 @@ impl<'lex> Lexer<'lex> {
         Self {
             cursor: 0,
             bytes,
-            file_id,
         }
     }
 
     fn byte(&self) -> u8 {
-
         self.bytes[self.cursor]
     }
 
@@ -97,7 +95,7 @@ impl<'lex> Lexer<'lex> {
 }
 
 impl<'lex> Iterator for Lexer<'lex> {
-    type Item = Result<Token, Diagnostic<usize>>;
+    type Item = Result<Token, Diagnostic>;
 
     fn next(&mut self) -> Option<Self::Item> {
         loop {
@@ -115,31 +113,31 @@ impl<'lex> Iterator for Lexer<'lex> {
             (b'a'..=b'z' | b'A'..=b'Z' | b'_', start) => {
                 while self.byte().is_ascii_alphanumeric() || self.byte() == b'_' { self.cursor += 1; }
 
-                Some(Ok(Token { kind: self.lookup_keyword(start), span: (start, self.cursor) }))
+                Some(Ok(Token { kind: self.lookup_keyword(start), span: Span(start, self.cursor) }))
             }
 
             // Number literals
             (b'0'..=b'9', start) => {
                 while self.byte().is_ascii_digit() { self.cursor += 1; }
 
-                Some(Ok(Token { kind: TokenKind::Int, span: (start, self.cursor) }))
+                Some(Ok(Token { kind: TokenKind::Int, span: Span(start, self.cursor) }))
             }
 
             // Sinlge character tokens
             ch if let Some(kind) = self.lookup_character(ch.0) => {
                 self.cursor += 1;
-                Some(Ok(Token { kind, span: (ch.1, self.cursor) }))
+                Some(Ok(Token { kind, span: Span(ch.1, self.cursor) }))
             }
 
             // Character not identified
             (b, start) => {
                 self.cursor += 1;
                 Some(Err(
-                    Diagnostic::error()
-                        .with_message(format!("unknown start of token: {}", b as char))
-                        .with_label(
-                            Label::primary(self.file_id, start..start)
-                        )
+                    error!(
+                        Span(start, start),
+                        "".into(),
+                        "unknown start of token `{}`", b as char
+                    )
                 ))
             }
         }
